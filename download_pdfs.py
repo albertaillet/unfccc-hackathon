@@ -38,7 +38,8 @@ def download_pdf(pdf_url: str, download_dir: Path):
         print(f"Downloading: {pdf_url}")
         response = requests.get(pdf_url)
         response.raise_for_status()
-        breakpoint()
+        breakpoint()  # Debugging point since I am currently getting the following response:
+        # b'<html>\r\n<head>\r\n<META NAME="robots" CONTENT="noindex,nofollow">\r\n<script src="/_Incapsula_Resource?SWJIYLWA=5074a744e2e3d891814e9a2dace20bd4,719d34d31c8e3a6e6fffd425f7e032f3">\r\n</script>\r\n<body>\r\n</body></html>\r\n'
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:  # filter out keep-alive new chunks
                 file_path.write_bytes(chunk) if not file_path.exists() else None
