@@ -4,7 +4,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
+import os
 
+URL = os.getenv("URL", "https://unfccc.int/event/cop-29")
 
 def main():
     print("Starting headless browser session to UNFCCC COP-29 event page...")
@@ -18,9 +20,8 @@ def main():
     
     try:
         # Navigate to the UNFCCC COP-29 event page
-        url = "https://unfccc.int/event/cop-29"
-        print(f"Navigating to: {url}")
-        driver.get(url)
+        print(f"Navigating to: {URL}")
+        driver.get(URL)
         
         # Wait for the page to load
         wait = WebDriverWait(driver, 10)
@@ -29,50 +30,53 @@ def main():
         # Give the page a moment to fully load dynamic content
         time.sleep(3)
         
-        # Search for all anchor elements containing "Access document"
         print("Searching for anchor elements containing 'Access document'...")
         
         # Find all anchor elements that contain the text "Access document"
-        access_document_links = driver.find_elements(
-            By.XPATH, 
-            "//a[contains(text(), 'Access document')]"
-        )
+        access_document_links = driver.find_elements(By.XPATH, "//a[contains(text(), 'Access document')]")
         
         print(f"Found {len(access_document_links)} anchor elements containing 'Access document':")
         
-        for i, link in enumerate(access_document_links, 1):
-            try:
-                text = link.text.strip()
-                href = link.get_attribute('href')
-                print(f"{i}. Text: '{text}'")
-                print(f"   URL: {href}")
-                print()
-            except Exception as e:
-                print(f"{i}. Error extracting link info: {e}")
-        
         if len(access_document_links) == 0:
-            print("No anchor elements containing 'Access document' were found on the page.")
+            print("No Access document links found to process.")
+            return
+
+        for link in access_document_links:
+            print(f"- {link.text.strip()}: {link.get_attribute('href')}")
+            text = link.text.strip()
+            href = link.get_attribute('href')
+            print(f"1. Text: '{text}'")
+            print(f"   URL: {href}")
             
-            # Let's also check for any links that might be similar
-            print("\nChecking for similar text patterns...")
-            similar_links = driver.find_elements(
-                By.XPATH, 
-                "//a[contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'access') or contains(translate(text(), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'document')]"
-            )
+            # Navigate to the first Access document link
+            print(f"Navigating to first Access document link: {href}")
+            driver.get(href)
             
-            print(f"Found {len(similar_links)} links containing 'access' or 'document':")
-            for i, link in enumerate(similar_links[:10], 1):  # Limit to first 10
-                try:
-                    text = link.text.strip()
-                    href = link.get_attribute('href')
-                    print(f"{i}. Text: '{text}'")
-                    print(f"   URL: {href}")
-                    print()
-                except Exception as e:
-                    print(f"{i}. Error extracting link info: {e}")
+            # Wait for the page to load
+            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
+            time.sleep(3)
+            
+            print("Looking for download dropdown with class='chosen-single'...")
+            download_dropdown = driver.find_element(By.CLASS_NAME, "chosen-single")
+            
+            print("Found download dropdown, clicking it...")
+            download_dropdown.click()
+            
+            # Wait a moment for dropdown to appear
+            time.sleep(2)
+            
+            # Look for and click "English" option
+            print("Looking for 'English' option in dropdown...")
+            english_option = driver.find_element(By.XPATH, "//li[contains(text(), 'English')]")
+            
+            print("Clicking 'English' option...")
+            english_option.click()
+            
+        print("Successfully selected English from dropdown!")
     
     except Exception as e:
         print(f"An error occurred: {e}")
+        breakpoint()
     
     finally:
         # Close the browser
