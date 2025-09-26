@@ -1,12 +1,18 @@
-from selenium import webdriver
-from selenium.webdriver.safari.options import Options
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-import time
 import os
+import time
+from pathlib import Path
+
+import requests
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.safari.options import Options
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 URL = os.getenv("URL", "https://unfccc.int/event/cop-29")
+DOWNLOAD_DIR = Path(os.getenv("DOWNLOAD_DIR", "./downloads"))
+
+DOWNLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def main():
     print("Starting headless browser session to UNFCCC COP-29 event page...")
@@ -52,36 +58,28 @@ def main():
             print(f"Navigating to first Access document link: {href}")
             driver.get(href)
 
-            # Find and click the "No Thanks" button if it exists
-            # no_thanks_button = driver.find_element(By.XPATH, "//button[contains(text(), 'No Thanks')]")
-            # it has id onesignal-slidedown-cancel-button
-            no_thanks_button = driver.find_element(By.ID, "onesignal-slidedown-cancel-button")
-
-            print("Found 'No Thanks' button, clicking it...")
-            no_thanks_button.click()
-            time.sleep(2)  # Wait for any potential modal to close
-            
-            # Wait for the page to load
-            wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
-            time.sleep(3)
-            
-            print("Looking for download dropdown with class='chosen-single'...")
-            download_dropdown = driver.find_element(By.CLASS_NAME, "chosen-single")
-            
-            print("Found download dropdown, clicking it...")
-            download_dropdown.click()
-            
-            # Wait a moment for dropdown to appear
-            time.sleep(2)
+            # Find the English option in the dropdown and download that pdf
+            # <div class="select-wrapper"><select class="small-download form-select form-control download" data-once="chosen" style="display:visible; position:absolute; width:0px; height: 0px; clip:rect(0,0,0,0)" tabindex="-1"><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02A.pdf">Arabic PDF 0.18 MB</option><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02C.pdf">Chinese PDF 0.22 MB</option><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02E.pdf">English PDF 0.12 MB</option><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02F.pdf">French PDF 0.16 MB</option><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02R.pdf">Russian PDF 0.20 MB</option><option value="https://unfccc.int/sites/default/files/resource/cp2024_01a02S.pdf">Spanish PDF 0.08 MB</option><option selected="" disabled="" class="hidden">Download</option><option selected="" disabled="" class="hidden">Download</option><option selected="" disabled="" class="hidden">Download</option></select><div class="chosen-container chosen-container-single small-download form-select form-control" title=""><a class="chosen-single">
+            # <span>Download</span>
+            # <div><b></b></div>
+            # TODO
             
             # Look for and click "English" option
-            print("Looking for 'English' option in dropdown...")
-            english_option = driver.find_element(By.XPATH, "//li[contains(text(), 'English')]")
+            select_element = driver.find_element(By.CSS_SELECTOR, "select.small-download")
+            # options = select_element.find_elements(By.TAG_NAME, "option")
+            # english_option = options.find_element(By.XPATH, ".//option[contains(text(), 'English')]")
+            english_option = select_element.find_element(By.XPATH, ".//option[contains(text(), 'English')]")
+            english_url = english_option.get_attribute("value")
+            print(f"Found English PDF URL: {english_url}")
+            print("Downloading the English PDF...")
             
-            print("Clicking 'English' option...")
-            english_option.click()
-            
-        print("Successfully selected English from dropdown!")
+            response = requests.get(english_url)
+            if response.status_code == 200:
+                file_path = DOWNLOAD_DIR / Path(english_url).name
+                file_path.write_bytes(response.content)
+                print(f"Downloaded and saved as: {file_path}")
+            else:
+                print(f"Failed to download the PDF. Status code: {response.status_code}")
     
     except Exception as e:
         print(f"An error occurred: {e}")
