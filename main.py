@@ -51,6 +51,15 @@ def main():
             # Navigate to the first Access document link
             print(f"Navigating to first Access document link: {href}")
             driver.get(href)
+
+            # Find and click the "No Thanks" button if it exists
+            # no_thanks_button = driver.find_element(By.XPATH, "//button[contains(text(), 'No Thanks')]")
+            # it has id onesignal-slidedown-cancel-button
+            no_thanks_button = driver.find_element(By.ID, "onesignal-slidedown-cancel-button")
+
+            print("Found 'No Thanks' button, clicking it...")
+            no_thanks_button.click()
+            time.sleep(2)  # Wait for any potential modal to close
             
             # Wait for the page to load
             wait.until(EC.presence_of_element_located((By.TAG_NAME, "body")))
